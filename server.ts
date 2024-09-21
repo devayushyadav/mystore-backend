@@ -2,6 +2,7 @@ import connectDB from "./lib/db";
 import express from "express";
 import authRoutes from "./routes/authRoutes";
 import cors from "cors";
+import productRoutes from "./routes/productRoutes";
 
 const app = express();
 
@@ -24,7 +25,7 @@ app.get("/", (req, res) => {
 
 // Use the routes defined in `routes.js`
 app.use("/api", authRoutes);
-// app.use("/", privateRoutes);
+app.use("/api", productRoutes);
 
 // Start the server
 app.listen(port, () => {

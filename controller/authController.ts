@@ -1,4 +1,4 @@
-import User from "../modal/usersModal";
+import User from "../model/usersModel";
 
 export const login = async (req, res) => {
     try {
