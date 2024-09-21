@@ -1,11 +1,11 @@
+import { imageToBase64 } from "../lib/config";
 import Products from "../model/productModel";
 import User from "../model/usersModel";
 
 
 export const addProduct = async (req, res) => {
   try {
-    const { name , price , company, category , color, image} = req.body;
-    const userId = req.headers.authorization
+    const { name , price , company, category , color , userId} = req.body;
 
     // Initialize an array to collect error messages
     let errors = [];
@@ -16,7 +16,10 @@ export const addProduct = async (req, res) => {
     if (!company) errors.push("company");
     if (!category) errors.push("category");
     if (!color) errors.push("color")
-    if (!image) errors.push("image")
+      
+    if (!req.file) {
+      errors.push("image");
+    }
 
     // If there are any errors, return a response with the missing fields
     if (errors.length > 0) {
@@ -25,12 +28,14 @@ export const addProduct = async (req, res) => {
       });
     }
 
+    const base64String = `data:image/png;base64,${req.file.buffer.toString('base64')}`; // Convert image to base64 string
+
     const product = new Products({
       userId,
       name,
       price,
       color,
-      image,
+      image:base64String,
       category,
       company
     })
