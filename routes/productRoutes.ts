@@ -2,7 +2,7 @@
 // It’s commonly used for handling file uploads.
 import multer from 'multer';
 
-import { addProduct } from "../controller/productController";
+import { addProduct, myProducts } from "../controller/productController";
 import { authMiddleware } from "../middleware/authMiddleware";
 
 const express = require("express");
@@ -21,6 +21,7 @@ productRoutes.use(authMiddleware)
 // upload.single('image')
 // The method .single('image') tells multer that you expect a single file upload with the field name image
 productRoutes.post("/add-product",upload.single('image'), addProduct);
+productRoutes.get("/my-products/:userId", myProducts);
 
 
 

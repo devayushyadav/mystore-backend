@@ -1,6 +1,5 @@
-import { imageToBase64 } from "../lib/config";
+import mongoose from "mongoose";
 import Products from "../model/productModel";
-import User from "../model/usersModel";
 
 
 export const addProduct = async (req, res) => {
@@ -46,6 +45,28 @@ export const addProduct = async (req, res) => {
       success: true,
       message : `${name} has been added successfully`,
       product: product
+    });
+
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+}
+
+export const myProducts = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    // Step 1: Validate if the provided ID is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    const product = await Products.find({ userId: userId });
+    
+    res.status(201).json({
+      success: true,
+      product : product
     });
 
   } catch (error) {
