@@ -2,7 +2,7 @@
 // It’s commonly used for handling file uploads.
 import multer from 'multer';
 
-import { addProduct, products, myProducts, getMyProduct, updateMyProducts } from "../controller/productController";
+import { addProduct, products, myProducts, getMyProduct, updateMyProducts, deleteMyProduct } from "../controller/productController";
 import { authMiddleware } from "../middleware/authMiddleware";
 
 const express = require("express");
@@ -25,5 +25,6 @@ productRoutes.post("/add-product",upload.single('image'), addProduct);
 productRoutes.get("/my-products", myProducts);
 productRoutes.get("/my-products/:productId", getMyProduct);
 productRoutes.put("/my-products/:productId",upload.single('image'), updateMyProducts);
+productRoutes.delete("/my-products/:productId", deleteMyProduct);
 
 export default productRoutes
