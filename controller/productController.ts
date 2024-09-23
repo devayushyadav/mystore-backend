@@ -19,7 +19,11 @@ export const products = async (req, res) => {
 
 export const addProduct = async (req, res) => {
   try {
-    const { name , price , company, category , color , userId} = req.body;
+    const { name , price , company, category , color} = req.body;
+
+    const authHeader = req.headers.authorization;
+
+    const userId = authHeader.split(' ')[1];
 
     // Initialize an array to collect error messages
     let errors = [];
