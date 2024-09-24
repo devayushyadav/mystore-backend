@@ -1,54 +1,61 @@
 import User from "../model/usersModel";
+import Jwt from "jsonwebtoken";
 
 export const login = async (req, res) => {
-    try {
-      const { email, password } = req.body;
-  
-      // Initialize an array to collect error messages
-      let errors = [];
-  
-      // Check each field and add an error message if a field is missing
-      if (!email) errors.push("email");
-      if (!password) errors.push("password");
-  
-      // If there are any errors, return a response with the missing fields
-      if (errors.length > 0) {
-        return res.status(400).json({
-          message: `Missing required fields: ${errors.join(", ")}`,
+  try {
+    const { email, password } = req.body;
+
+    // Initialize an array to collect error messages
+    let errors = [];
+
+    // Check each field and add an error message if a field is missing
+    if (!email) errors.push("email");
+    if (!password) errors.push("password");
+
+    // If there are any errors, return a response with the missing fields
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message: `Missing required fields: ${errors.join(", ")}`,
+      });
+    }
+
+    const user = await User.findOne({ email, password }).select("-password");
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "Invalid Credentials, Please try again" });
+    }
+
+    Jwt.sign(
+      { user },
+      process.env.JWT_KEY,
+      { expiresIn: "30d" },
+      (err, token) => {
+        if (err) {
+          res.status(500).json({
+            message: "Server Error",
+            err: err,
+            success: false,
+          });
+        }
+        res.status(201).json({
+          success: true,
+          message: `Welcome ${user.firstName}`,
+          user: user,
+          token,
         });
       }
-      
-  
-      const user = await User.findOne({ email , password})
-  
-      if(!user){
-        return res.status(404).json({ message: "Invalid Credentials, Please try again" });
-      }
-
-    //   // Set a cookie with the username
-    //   res.cookie('username', user._id, {
-    //     httpOnly: true,     // Makes the cookie inaccessible to client-side scripts
-    //     secure: true,       // Ensures the cookie is sent only over HTTPS
-    //     sameSite: 'Strict', // Controls whether the cookie is sent with cross-site requests
-    //     maxAge: 24 * 60 * 60 * 1000, // 1 day
-    // });
-  
-      res.status(201).json({
-        success: true,
-        message : `Welcome ${user.firstName}`,
-        user: user
-      });
-  
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      res.status(500).json({ message: "Server Error" });
-    }
+    );
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ message: "Server Error" });
   }
-
+};
 
 export const signup = async (req, res) => {
   try {
-    const { firstName , lastName , email, mobile , password} = req.body;
+    const { firstName, lastName, email, mobile, password } = req.body;
 
     // Initialize an array to collect error messages
     let errors = [];
@@ -58,7 +65,7 @@ export const signup = async (req, res) => {
     if (!lastName) errors.push("lastName");
     if (!email) errors.push("email");
     if (!mobile) errors.push("mobile");
-    if (!password) errors.push("password")
+    if (!password) errors.push("password");
 
     // If there are any errors, return a response with the missing fields
     if (errors.length > 0) {
@@ -72,19 +79,18 @@ export const signup = async (req, res) => {
       lastName,
       email,
       mobile,
-      password
-    })
+      password,
+    });
 
-    await user.save()
+    await user.save();
 
     res.status(201).json({
       success: true,
-      message : `Congratulation ${firstName}, your account has been created successfully. Please login to continue`,
-      user: user
+      message: `Congratulation ${firstName}, your account has been created successfully. Please login to continue`,
+      user: user,
     });
-
   } catch (error) {
     console.error("Error fetching products:", error);
     res.status(500).json({ message: "Server Error" });
   }
-}
+};

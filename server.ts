@@ -3,8 +3,10 @@ import express from "express";
 import authRoutes from "./routes/authRoutes";
 import cors from "cors";
 import productRoutes from "./routes/productRoutes";
+import dotenv from "dotenv"
 
 const app = express();
+dotenv.config()
 
 // Set a default port if process.env.PORT is undefined
 const port = process.env.PORT || 4500;

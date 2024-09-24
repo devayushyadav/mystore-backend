@@ -1,204 +1,215 @@
 import mongoose from "mongoose";
 import Products from "../model/productModel";
 
+// Fetch all products from the database
 export const products = async (req, res) => {
   try {
-
+    // Find all products
     const product = await Products.find();
-    
+
+    // Return the list of products in the response
     res.status(201).json({
       success: true,
-      product : product
+      product: product,
     });
-
   } catch (error) {
+    // Log and handle any errors that occur while fetching the products
     console.error("Error fetching products:", error);
     res.status(500).json({ message: "Server Error" });
   }
-}
+};
 
+// Add a new product to the database
 export const addProduct = async (req, res) => {
   try {
-    const { name , price , company, category , color} = req.body;
+    // Destructure the product details from the request body
+    const { name, price, company, category, color } = req.body;
 
-    const authHeader = req.headers.authorization;
+    // Get the authenticated user's data from the request object
+    const { user } = req.user;
+    const userId = user._id; // User ID of the authenticated user
 
-    const userId = authHeader.split(' ')[1];
-
-    // Initialize an array to collect error messages
+    // Initialize an array to store any validation errors
     let errors = [];
 
-    // Check each field and add an error message if a field is missing
+    // Check if all required fields are provided
     if (!name) errors.push("name");
     if (!price) errors.push("price");
     if (!company) errors.push("company");
     if (!category) errors.push("category");
-    if (!color) errors.push("color")
-      
+    if (!color) errors.push("color");
+
+    // Check if an image is provided
     if (!req.file) {
       errors.push("image");
     }
 
-    // If there are any errors, return a response with the missing fields
+    // If any required fields are missing, return a 400 response with the missing fields
     if (errors.length > 0) {
       return res.status(400).json({
         message: `Missing required fields: ${errors.join(", ")}`,
       });
     }
 
-    const base64String = `data:image/png;base64,${req.file.buffer.toString('base64')}`; // Convert image to base64 string
+    // Convert the uploaded image to a base64 string format
+    const base64String = `data:image/png;base64,${req.file.buffer.toString(
+      "base64"
+    )}`;
 
+    // Create a new product document
     const product = new Products({
       userId,
       name,
       price,
       color,
-      image:base64String,
+      image: base64String,
       category,
-      company
-    })
-
-    await product.save()
-
-    res.status(201).json({
-      success: true,
-      message : `${name} has been added successfully`,
-      product: product
+      company,
     });
 
+    // Save the product to the database
+    await product.save();
+
+    // Return a success response with the newly added product
+    res.status(201).json({
+      success: true,
+      message: `${name} has been added successfully`,
+      product: product,
+    });
   } catch (error) {
-    console.error("Error fetching products:", error);
+    // Handle and log errors that occur during product creation
+    console.error("Error adding product:", error);
     res.status(500).json({ message: "Server Error" });
   }
-}
+};
 
+// Get all products created by the authenticated user
 export const myProducts = async (req, res) => {
   try {
+    // Get the authenticated user's data from the request object
+    const { user } = req.user;
+    const userId = user._id; // User ID of the authenticated user
 
-    const authHeader = req.headers.authorization;
-
-    const userId = authHeader.split(' ')[1];
-
-    // Step 1: Validate if the provided ID is a valid MongoDB ObjectId
+    // Validate the user ID
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "User not found" });
     }
 
+    // Find products created by the authenticated user
     const product = await Products.find({ userId: userId });
-    
+
+    // Return the user's products in the response
     res.status(201).json({
       success: true,
-      product : product
+      product: product,
     });
-
   } catch (error) {
-    console.error("Error fetching products:", error);
+    // Handle and log errors that occur while fetching the products
+    console.error("Error fetching user products:", error);
     res.status(500).json({ message: "Server Error" });
   }
-}
+};
 
+// Get a specific product created by the authenticated user
 export const getMyProduct = async (req, res) => {
   try {
-    const { productId } = req.params;
-    const authHeader = req.headers.authorization;
+    const { productId } = req.params; // Get product ID from the URL parameters
+    const { user } = req.user; // Get authenticated user data from request
+    const userId = user._id; // Get user ID
 
-    // Extract the userId from the token
-    const token = authHeader && authHeader.split(' ')[1]; // Assumes 'Bearer <token>' format
-    const userId = token; // Assuming userId is directly from the token for simplicity (adjust if needed)
-
-    // Step 1: Validate if the provided userId is a valid MongoDB ObjectId
+    // Validate the user and product IDs
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid user ID" });
     }
-
-    // Step 2: Validate if the provided productId is a valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       return res.status(400).json({ message: "Invalid Product ID" });
     }
 
-    // Step 3: Find the product by its ID
+    // Find the product by its ID
     const product = await Products.findOne({ _id: productId });
 
-    // Step 4: Check if product exists
+    // If the product doesn't exist, return a 404 response
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Step 5: Check if the authenticated user's userId matches the product's userId
+    // Ensure that the product belongs to the authenticated user
     if (!product.userId.equals(userId)) {
-      return res.status(403).json({ message: "You are not authorized to access this product" });
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to access this product" });
     }
 
-
-    // Step 6: Return the product if the user is authorized
+    // Return the product details in the response
     res.status(200).json({
       success: true,
-      product: product
+      product: product,
     });
-
   } catch (error) {
+    // Handle and log any errors that occur
     console.error("Error fetching product:", error);
     res.status(500).json({ message: "Server Error" });
   }
 };
 
+// Update a specific product created by the authenticated user
 export const updateMyProducts = async (req, res) => {
   try {
-    const { productId } = req.params;
-    const authHeader = req.headers.authorization;
+    const { productId } = req.params; // Get product ID from URL parameters
+    const { user } = req.user; // Get authenticated user data from request
+    const userId = user._id; // Get user ID
 
-    // Extract the userId from the token
-    const token = authHeader && authHeader.split(' ')[1]; // Assumes 'Bearer <token>' format
-    const userId = token; // Assuming userId is directly from the token for simplicity (adjust if needed)
-
-    // Step 1: Validate if the provided userId is a valid MongoDB ObjectId
+    // Validate the user and product IDs
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid user ID" });
     }
-
-    // Step 2: Validate if the provided productId is a valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       return res.status(400).json({ message: "Invalid Product ID" });
     }
 
-    // Step 3: Find the product by its ID
+    // Find the product by its ID
     const product = await Products.findOne({ _id: productId });
 
-    // Step 4: Check if product exists
+    // If the product doesn't exist, return a 404 response
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Step 5: Check if the authenticated user's userId matches the product's userId
+    // Ensure that the product belongs to the authenticated user
     if (!product.userId.equals(userId)) {
-      return res.status(403).json({ message: "You are not authorized to access this product" });
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to access this product" });
     }
 
-    const { name , price , company, category , color} = req.body;
+    // Destructure the updated fields from the request body
+    const { name, price, company, category, color } = req.body;
 
-    // Initialize an array to collect error messages
+    // Validate that all required fields are provided
     let errors = [];
-
-    // Check each field and add an error message if a field is missing
     if (!name) errors.push("name");
     if (!price) errors.push("price");
     if (!company) errors.push("company");
     if (!category) errors.push("category");
-    if (!color) errors.push("color")
-      
-    let base64String = '';
+    if (!color) errors.push("color");
 
+    let base64String = "";
+
+    // If a new image is provided, convert it to a base64 string
     if (req.file) {
-      base64String = `data:image/png;base64,${req.file.buffer.toString('base64')}`
+      base64String = `data:image/png;base64,${req.file.buffer.toString(
+        "base64"
+      )}`;
     }
 
-    // If there are any errors, return a response with the missing fields
+    // If there are validation errors, return a 400 response
     if (errors.length > 0) {
       return res.status(400).json({
         message: `Missing required fields: ${errors.join(", ")}`,
       });
     }
 
+    // Update the product fields
     product.name = name;
     product.price = price;
     product.company = company;
@@ -208,64 +219,63 @@ export const updateMyProducts = async (req, res) => {
       product.image = base64String;
     }
 
+    // Save the updated product
     await product.save();
 
+    // Return a success response with the updated product details
     res.status(200).json({
       success: true,
       product: product,
       message: "Product updated successfully",
     });
-
   } catch (error) {
-    console.error("Error fetching product:", error);
+    // Handle and log any errors that occur
+    console.error("Error updating product:", error);
     res.status(500).json({ message: "Server Error" });
   }
 };
 
+// Delete a specific product created by the authenticated user
 export const deleteMyProduct = async (req, res) => {
   try {
-    const { productId } = req.params;
-    const authHeader = req.headers.authorization;
+    const { productId } = req.params; // Get product ID from URL parameters
+    const { user } = req.user; // Get authenticated user data from request
+    const userId = user._id; // Get user ID
 
-    // Extract the userId from the token
-    const token = authHeader && authHeader.split(' ')[1]; // Assumes 'Bearer <token>' format
-    const userId = token; // Assuming userId is directly from the token for simplicity (adjust if needed)
-
-    // Step 1: Validate if the provided userId is a valid MongoDB ObjectId
+    // Validate the user and product IDs
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid user ID" });
     }
-
-    // Step 2: Validate if the provided productId is a valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       return res.status(400).json({ message: "Invalid Product ID" });
     }
 
-    // Step 3: Find the product by its ID
+    // Find the product by its ID
     const product = await Products.findOne({ _id: productId });
 
-    // Step 4: Check if product exists
+    // If the product doesn't exist, return a 404 response
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Step 5: Check if the authenticated user's userId matches the product's userId
+    // Ensure that the product belongs to the authenticated user
     if (!product.userId.equals(userId)) {
-      return res.status(403).json({ message: "You are not authorized to access this product" });
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to access this product" });
     }
 
-    // Step 6: Delete the product
+    // Delete the product
     await Products.deleteOne({ _id: productId });
 
-
-    // Step 7: Return a success response
+    // Return a success response
     res.status(200).json({
       success: true,
-      message: "Product deleted successfully"
+      message: "Product deleted successfully",
     });
-
   } catch (error) {
-    console.error("Error fetching product:", error);
+    // Handle and log any errors that occur
+    console.error("Error deleting product:", error);
     res.status(500).json({ message: "Server Error" });
   }
 };
