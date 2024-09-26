@@ -1,3 +1,4 @@
+import { generateAccessToken } from "../lib/config";
 import User from "../model/usersModel";
 import Jwt from "jsonwebtoken";
 
@@ -27,26 +28,14 @@ export const login = async (req, res) => {
         .json({ message: "Invalid Credentials, Please try again" });
     }
 
-    Jwt.sign(
-      { user },
-      process.env.JWT_KEY,
-      { expiresIn: "30d" },
-      (err, token) => {
-        if (err) {
-          res.status(500).json({
-            message: "Server Error",
-            err: err,
-            success: false,
-          });
-        }
-        res.status(201).json({
-          success: true,
-          message: `Welcome ${user.firstName}`,
-          user: user,
-          token,
-        });
-      }
-    );
+    const accessToken = await generateAccessToken(user);
+
+    res.status(201).json({
+      success: true,
+      message: `Welcome ${user.firstName}`,
+      user: user,
+      token: accessToken,
+    });
   } catch (error) {
     console.error("Error fetching products:", error);
     res.status(500).json({ message: "Server Error" });

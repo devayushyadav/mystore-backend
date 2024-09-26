@@ -1,4 +1,6 @@
-module.exports.isBase64 = (str) => {
+import Jwt from "jsonwebtoken";
+
+export const isBase64 = (str) => {
   try {
     // Remove the data URL prefix if present
     const base64String = str.split(",")[1] || str;
@@ -8,4 +10,11 @@ module.exports.isBase64 = (str) => {
   } catch (error) {
     return false;
   }
+};
+
+export const generateAccessToken = (user) => {
+  const token = Jwt.sign({ user }, process.env.JWT_KEY, {
+    expiresIn: "1h",
+  });
+  return token;
 };
