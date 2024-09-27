@@ -1,4 +1,8 @@
-import { generateAccessToken } from "../lib/config";
+import {
+  generateAccessToken,
+  generateHashedPassword,
+  matchPassword,
+} from "../lib/config";
 import User from "../model/usersModel";
 import Jwt from "jsonwebtoken";
 
@@ -20,12 +24,20 @@ export const login = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email, password }).select("-password");
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res
         .status(404)
-        .json({ message: "Invalid Credentials, Please try again" });
+        .json({ message: "User with this email does not exist." });
+    }
+
+    const isPasswordCorrect = await matchPassword(password, user.password);
+
+    if (!isPasswordCorrect) {
+      return res
+        .status(404)
+        .json({ message: "Invalid password, Please try again" });
     }
 
     const accessToken = await generateAccessToken(user);
@@ -63,12 +75,14 @@ export const signup = async (req, res) => {
       });
     }
 
+    const hashedPassword = await generateHashedPassword(password);
+
     const user = new User({
       firstName,
       lastName,
       email,
       mobile,
-      password,
+      password: hashedPassword,
     });
 
     await user.save();
